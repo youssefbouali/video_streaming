@@ -1,0 +1,36 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>WebRTC Viewer</title>
+</head>
+<body>
+  <h2>Live Video</h2>
+  <video id="video" autoplay playsinline controls muted></video>
+
+  <script>
+    async function start() {
+      const pc = new RTCPeerConnection();
+      pc.addTransceiver("video", { direction: "recvonly" });
+
+      pc.ontrack = (event) => {
+        document.getElementById("video").srcObject = event.streams[0];
+      };
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+
+      const response = await fetch("/offer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ offer: pc.localDescription })
+      });
+
+      const answer = await response.json();
+      await pc.setRemoteDescription(new RTCSessionDescription(answer));
+    }
+
+    start();
+  </script>
+</body>
+</html>
